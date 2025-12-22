@@ -1,0 +1,96 @@
+# Docker Compose para demonstração de escala horizontal com SignalR + Redis
+# 
+# Arquitetura:
+#   - nginx: Load balancer que distribui requisições entre os servidores
+#   - server-1, server-2, server-3: Três instâncias da API SignalR
+#   - redis: Backplane para Pub/Sub entre as instâncias
+#
+# Para executar: docker-compose up --build
+
+services:
+  # Redis - Backplane para SignalR
+  # Responsável por propagar mensagens entre todas as instâncias
+  redis:
+    image: redis:7-alpine
+    container_name: signalr-redis
+    ports:
+      - "6379:6379"
+    networks:
+      - signalr-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # Servidor 1
+  server-1:
+    build:
+      context: ./ChatApi
+      dockerfile: Dockerfile
+    container_name: signalr-server-1
+    environment:
+      - SERVER_ID=Server-1
+      - REDIS_CONNECTION=redis:6379
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - signalr-network
+    expose:
+      - "8080"
+
+  # Servidor 2
+  server-2:
+    build:
+      context: ./ChatApi
+      dockerfile: Dockerfile
+    container_name: signalr-server-2
+    environment:
+      - SERVER_ID=Server-2
+      - REDIS_CONNECTION=redis:6379
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - signalr-network
+    expose:
+      - "8080"
+
+  # Servidor 3
+  server-3:
+    build:
+      context: ./ChatApi
+      dockerfile: Dockerfile
+    container_name: signalr-server-3
+    environment:
+      - SERVER_ID=Server-3
+      - REDIS_CONNECTION=redis:6379
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - signalr-network
+    expose:
+      - "8080"
+
+  # Nginx - Load Balancer
+  # Distribui conexões WebSocket entre os servidores usando IP Hash
+  nginx:
+    image: nginx:alpine
+    container_name: signalr-nginx
+    ports:
+      - "5000:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - server-1
+      - server-2
+      - server-3
+    networks:
+      - signalr-network
+
+networks:
+  signalr-network:
+    driver: bridge
+
