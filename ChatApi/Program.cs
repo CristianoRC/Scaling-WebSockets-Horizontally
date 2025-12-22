@@ -1,8 +1,10 @@
 using ChatApi.Hubs;
+using ChatApi.Services;
+using StackExchange.Redis;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Obtém a connection string do Redis das variáveis de ambiente ou appsettings
+// Obtém a connection string do Redis
 var redisConnectionString = builder.Configuration.GetConnectionString("Redis") 
     ?? Environment.GetEnvironmentVariable("REDIS_CONNECTION") 
     ?? "localhost:6379";
@@ -14,16 +16,41 @@ Console.WriteLine($"  Servidor: {serverId}");
 Console.WriteLine($"  Redis: {redisConnectionString}");
 Console.WriteLine($"========================================");
 
-// Configura SignalR com Redis backplane para escala horizontal
-// O Redis atua como Pub/Sub para propagar mensagens entre instâncias
+// ============================================================
+// OPÇÃO 1: AUTOMÁTICO (AddStackExchangeRedis)
+// O SignalR cuida de tudo automaticamente
+// ============================================================
 builder.Services.AddSignalR()
     .AddStackExchangeRedis(redisConnectionString, options =>
     {
-        // Prefixo do canal para isolar esta aplicação
-        options.Configuration.ChannelPrefix = new StackExchange.Redis.RedisChannel("ChatApp", StackExchange.Redis.RedisChannel.PatternMode.Literal);
+        options.Configuration.ChannelPrefix = new StackExchange.Redis.RedisChannel(
+            "ChatApp", 
+            StackExchange.Redis.RedisChannel.PatternMode.Literal);
     });
 
-// Habilita CORS para o frontend
+// ============================================================
+// OPÇÃO 2: MANUAL (Pub/Sub na mão)
+// Mostra exatamente o que acontece por baixo dos panos
+// ============================================================
+
+// Conexão com Redis (singleton para reusar conexões)
+builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
+{
+    var config = ConfigurationOptions.Parse(redisConnectionString);
+    config.AbortOnConnectFail = false;
+    return ConnectionMultiplexer.Connect(config);
+});
+
+// Serviço de publicação (envia mensagens pro Redis)
+builder.Services.AddSingleton<RedisPublisher>();
+
+// Serviço de assinatura (recebe mensagens do Redis) - roda em background
+builder.Services.AddHostedService<RedisSubscriber>();
+
+// ============================================================
+// Configurações gerais
+// ============================================================
+
 builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>
@@ -40,22 +67,27 @@ app.UseCors();
 app.UseDefaultFiles();
 app.UseStaticFiles();
 
-// Mapeia o Hub do SignalR
+// Hub AUTOMÁTICO - usa AddStackExchangeRedis por baixo
 app.MapHub<ChatHub>("/chatHub");
 
-// Endpoint de health check
+// Hub MANUAL - usa nosso Pub/Sub explícito
+app.MapHub<ManualChatHub>("/manualChatHub");
+
+// Endpoints de informação
 app.MapGet("/health", () => new { 
     Status = "Healthy", 
     Server = serverId,
     Timestamp = DateTime.UtcNow 
 });
 
-// Endpoint para informações do servidor
 app.MapGet("/info", () => new {
     ServerId = serverId,
     MachineName = Environment.MachineName,
-    ProcessId = Environment.ProcessId
+    ProcessId = Environment.ProcessId,
+    Endpoints = new {
+        Automatic = "/chatHub",
+        Manual = "/manualChatHub"
+    }
 });
 
 app.Run();
-

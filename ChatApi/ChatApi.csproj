@@ -7,8 +7,11 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- Modo Automático: SignalR com Redis backplane integrado -->
     <PackageReference Include="Microsoft.AspNetCore.SignalR.StackExchangeRedis" Version="10.0.0-preview.1.25120.3" />
+    
+    <!-- Modo Manual: Cliente Redis direto (já vem como dependência, mas explícito para clareza) -->
+    <PackageReference Include="StackExchange.Redis" Version="2.8.16" />
   </ItemGroup>
 
 </Project>
-
