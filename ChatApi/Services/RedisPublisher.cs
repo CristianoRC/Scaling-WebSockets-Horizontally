@@ -9,15 +9,15 @@ public class RedisPublisher
 {
     private readonly ISubscriber _subscriber;
     private readonly string _serverId;
-    
-    private const string ChatChannel = "chat:messages";
+    private readonly RedisChannel _chatChannel;
 
-    public RedisPublisher(IConnectionMultiplexer redis)
+    public RedisPublisher(IConnectionMultiplexer redis, IConfiguration configuration)
     {
         _subscriber = redis.GetSubscriber();
-        _serverId = Environment.GetEnvironmentVariable("SERVER_ID") ?? "Local";
-    }
+        _serverId = configuration.GetValue<string>("SERVER_ID") ?? "Unknown";
+        _chatChannel = RedisChannel.Literal("chat:messages");
 
+    }
 
     public async Task PublishMessageAsync(string user, string message)
     {
@@ -30,6 +30,6 @@ public class RedisPublisher
         };
 
         var messageSerialized = JsonSerializer.Serialize(chatMessage);
-        await _subscriber.PublishAsync(RedisChannel.Literal(ChatChannel), messageSerialized);
+        await _subscriber.PublishAsync(_chatChannel, messageSerialized);
     }
 }

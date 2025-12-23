@@ -4,7 +4,12 @@ namespace ChatApi.Hubs;
 
 public class ChatHub : Hub
 {
-    private readonly string _serverId = Environment.GetEnvironmentVariable("SERVER_ID") ?? "Unknown";
+    public ChatHub(IConfiguration configuration)
+    {
+        _serverId = configuration.GetValue<string>("SERVER_ID") ?? "Unknown";
+    }
+    
+    private readonly string _serverId;
     
     public async Task SendMessage(string user, string message)
     {
