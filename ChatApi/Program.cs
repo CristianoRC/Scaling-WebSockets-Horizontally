@@ -4,7 +4,6 @@ using StackExchange.Redis;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Obtém a connection string do Redis
 var redisConnectionString = builder.Configuration.GetConnectionString("Redis") 
     ?? "localhost:6379,abortConnect=false";
 

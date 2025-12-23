@@ -1,13 +1,11 @@
 using System.Text.Json;
 using ChatApi.Hubs;
+using ChatApi.Models;
 using Microsoft.AspNetCore.SignalR;
 using StackExchange.Redis;
 
 namespace ChatApi.Services;
 
-/// <summary>
-/// Serviço que assina canais do Redis e propaga mensagens para clientes SignalR.
-/// </summary>
 public class RedisSubscriber : BackgroundService
 {
     public RedisSubscriber(IConnectionMultiplexer redis, IHubContext<ManualChatHub> hubContext)
@@ -19,31 +17,23 @@ public class RedisSubscriber : BackgroundService
     private readonly IConnectionMultiplexer _redis;
     private readonly IHubContext<ManualChatHub> _hubContext;
 
-    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    protected override async Task ExecuteAsync(CancellationToken cancellationToken)
     {
-        while (!_redis.IsConnected && !stoppingToken.IsCancellationRequested)
-        {
-            await Task.Delay(1000, stoppingToken);
-        }
-
-        if (stoppingToken.IsCancellationRequested) return;
+        if (cancellationToken.IsCancellationRequested) return;
 
         var subscriber = _redis.GetSubscriber();
 
         await subscriber.SubscribeAsync(
             RedisChannel.Literal("chat:messages"),
-            async void (channel, message) => await HandleChatMessage(channel, message, stoppingToken)
+            async void (channel, message) => await HandleChatMessage(channel, message, cancellationToken)
         );
 
-        await Task.Delay(Timeout.Infinite, stoppingToken);
+        await Task.Delay(Timeout.Infinite, cancellationToken);
     }
-
-    /// <summary>
-    /// Processa mensagens de chat recebidas do Redis.
-    /// </summary>
-    private async Task HandleChatMessage(RedisChannel _, RedisValue message, CancellationToken stoppingToken)
+    
+    private async Task HandleChatMessage(RedisChannel _, RedisValue message, CancellationToken cancellationToken)
     {
-        var chatMessage = JsonSerializer.Deserialize<ChatMessage>(message.ToString());
+        var chatMessage = JsonSerializer.Deserialize<ChatMessage?>(message.ToString());
         if (chatMessage == null) return;
 
         await _hubContext.Clients.All.SendAsync(
@@ -51,7 +41,7 @@ public class RedisSubscriber : BackgroundService
             chatMessage.User,
             chatMessage.Text,
             chatMessage.ServerId,
-            stoppingToken
+            cancellationToken
         );
     }
 }
