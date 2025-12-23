@@ -36,7 +36,7 @@ Agora todos recebem todas as mensagens! ✅
 docker-compose up --build
 ```
 
-Acesse: **http://localhost:5000**
+Acesse: **http://localhost:8080**
 
 ---
 
@@ -75,7 +75,7 @@ C4Container
         ContainerDb(redis, "Redis", "Message Broker", "Pub/Sub backplane para propagar mensagens entre instâncias")
     }
 
-    Rel(user, nginx, "Acessa", "HTTPS/WSS :5000")
+    Rel(user, nginx, "Acessa", "HTTPS/WSS :8080")
     Rel(nginx, server1, "Roteia", "HTTP/WS")
     Rel(nginx, server2, "Roteia", "HTTP/WS")
     Rel(nginx, server3, "Roteia", "HTTP/WS")
@@ -120,7 +120,7 @@ flowchart TB
     end
 
     subgraph Docker["🐳 Docker Network"]
-        N[🌐 NGINX<br/>Load Balancer<br/>:5000]
+        N[🌐 NGINX<br/>Load Balancer<br/>:8080]
         
         subgraph Servers["API Servers"]
             S1[🟢 Server-1<br/>.NET SignalR]
@@ -158,7 +158,7 @@ flowchart TB
 
 ## Teste Você Mesmo
 
-1. Abra **3 abas** do navegador em http://localhost:5000
+1. Abra **3 abas** do navegador em http://localhost:8080
 2. Veja que cada aba pode conectar em um **servidor diferente**
 3. Envie uma mensagem em qualquer aba
 4. **Todas as abas recebem!** 🎉
