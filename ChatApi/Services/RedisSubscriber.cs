@@ -36,6 +36,16 @@ public class RedisSubscriber : BackgroundService
     {
         Console.WriteLine($"[{_serverId}] RedisSubscriber iniciando...");
         
+        // Aguarda o Redis estar conectado
+        while (!_redis.IsConnected && !stoppingToken.IsCancellationRequested)
+        {
+            Console.WriteLine($"[{_serverId}] Aguardando conexão com Redis...");
+            await Task.Delay(1000, stoppingToken);
+        }
+
+        if (stoppingToken.IsCancellationRequested) return;
+        
+        Console.WriteLine($"[{_serverId}] Redis conectado!");
         var subscriber = _redis.GetSubscriber();
 
         // ============================================================

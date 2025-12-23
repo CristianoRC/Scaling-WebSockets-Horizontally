@@ -30,8 +30,8 @@ services:
       dockerfile: Dockerfile
     container_name: signalr-server-1
     environment:
-      - SERVER_ID=Server-1
-      - REDIS_CONNECTION=redis:6379
+      SERVER_ID: Server-1
+      ConnectionStrings__Redis: "redis:6379,abortConnect=false"
     depends_on:
       redis:
         condition: service_healthy
@@ -47,8 +47,8 @@ services:
       dockerfile: Dockerfile
     container_name: signalr-server-2
     environment:
-      - SERVER_ID=Server-2
-      - REDIS_CONNECTION=redis:6379
+      SERVER_ID: Server-2
+      ConnectionStrings__Redis: "redis:6379,abortConnect=false"
     depends_on:
       redis:
         condition: service_healthy
@@ -64,8 +64,8 @@ services:
       dockerfile: Dockerfile
     container_name: signalr-server-3
     environment:
-      - SERVER_ID=Server-3
-      - REDIS_CONNECTION=redis:6379
+      SERVER_ID: Server-3
+      ConnectionStrings__Redis: "redis:6379,abortConnect=false"
     depends_on:
       redis:
         condition: service_healthy

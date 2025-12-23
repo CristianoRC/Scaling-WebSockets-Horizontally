@@ -6,8 +6,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Obtém a connection string do Redis
 var redisConnectionString = builder.Configuration.GetConnectionString("Redis") 
-    ?? Environment.GetEnvironmentVariable("REDIS_CONNECTION") 
-    ?? "localhost:6379";
+    ?? "localhost:6379,abortConnect=false";
 
 var serverId = Environment.GetEnvironmentVariable("SERVER_ID") ?? "Local";
 
@@ -23,6 +22,7 @@ Console.WriteLine($"========================================");
 builder.Services.AddSignalR()
     .AddStackExchangeRedis(redisConnectionString, options =>
     {
+        options.Configuration.AbortOnConnectFail = false;
         options.Configuration.ChannelPrefix = new RedisChannel(
             "ChatApp", 
             RedisChannel.PatternMode.Literal);
@@ -34,10 +34,14 @@ builder.Services.AddSignalR()
 // ============================================================
 
 // Conexão com Redis (singleton para reusar conexões)
+// Usa a mesma connection string que o SignalR
 builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
 {
     var config = ConfigurationOptions.Parse(redisConnectionString);
     config.AbortOnConnectFail = false;
+    config.ConnectRetry = 5;
+    config.ConnectTimeout = 10000;
+    Console.WriteLine($"[Manual Redis] Conectando em: {redisConnectionString}");
     return ConnectionMultiplexer.Connect(config);
 });
 
