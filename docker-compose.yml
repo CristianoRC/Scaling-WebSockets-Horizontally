@@ -11,7 +11,7 @@ services:
   # Redis - Backplane para SignalR
   # Responsável por propagar mensagens entre todas as instâncias
   redis:
-    image: redis:7-alpine
+    image: redis:8-alpine
     container_name: signalr-redis
     ports:
       - "6379:6379"
