@@ -26,11 +26,15 @@
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
+        html, body {
+            height: 100%;
+            overflow: hidden;
+        }
+
         body {
             font-family: 'Sora', sans-serif;
             background: var(--bg-deep);
             color: var(--text);
-            min-height: 100vh;
             display: flex;
             flex-direction: column;
             background-image: 
@@ -48,6 +52,7 @@
             justify-content: space-between;
             flex-wrap: wrap;
             gap: 1rem;
+            flex-shrink: 0; /* Header não encolhe */
         }
 
         .logo {
@@ -140,6 +145,8 @@
             max-width: 1400px;
             margin: 0 auto;
             width: 100%;
+            min-height: 0; /* Importante para flex funcionar com overflow */
+            overflow: hidden;
         }
 
         /* ========== CHAT SECTION ========== */
@@ -147,6 +154,7 @@
             flex: 1;
             display: flex;
             flex-direction: column;
+            min-height: 0; /* Permite que o flex child tenha overflow */
             background: var(--bg-main);
             border: 1px solid var(--border);
             border-radius: 16px;
@@ -161,6 +169,7 @@
             display: flex;
             align-items: center;
             gap: 0.5rem;
+            flex-shrink: 0;
         }
 
         .messages-container {
@@ -263,6 +272,7 @@
             padding: 1.25rem 1.5rem;
             border-top: 1px solid var(--border);
             background: var(--bg-card);
+            flex-shrink: 0;
         }
 
         .name-input {
@@ -355,6 +365,8 @@
             display: flex;
             flex-direction: column;
             gap: 1rem;
+            overflow-y: auto;
+            min-height: 0;
         }
 
         .sidebar-card {
