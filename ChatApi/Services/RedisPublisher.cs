@@ -27,8 +27,6 @@ public class RedisPublisher
         _redis = redis;
         _subscriber = redis.GetSubscriber();
         _serverId = Environment.GetEnvironmentVariable("SERVER_ID") ?? "Local";
-        
-        Console.WriteLine($"[{_serverId}] RedisPublisher inicializado");
     }
 
     /// <summary>
@@ -46,14 +44,12 @@ public class RedisPublisher
         };
 
         var json = JsonSerializer.Serialize(chatMessage);
-        
+
         // PUBLISH chat:messages "{...json...}"
         await _subscriber.PublishAsync(
-            RedisChannel.Literal(ChatChannel), 
+            RedisChannel.Literal(ChatChannel),
             json
         );
-
-        Console.WriteLine($"[{_serverId}] PUBLISH {ChatChannel} -> {user}: {message}");
     }
 }
 

@@ -10,11 +10,6 @@ var redisConnectionString = builder.Configuration.GetConnectionString("Redis")
 
 var serverId = Environment.GetEnvironmentVariable("SERVER_ID") ?? "Local";
 
-Console.WriteLine($"========================================");
-Console.WriteLine($"  Servidor: {serverId}");
-Console.WriteLine($"  Redis: {redisConnectionString}");
-Console.WriteLine($"========================================");
-
 // ============================================================
 // OPÇÃO 1: AUTOMÁTICO (AddStackExchangeRedis)
 // O SignalR cuida de tudo automaticamente
@@ -41,7 +36,6 @@ builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
     config.AbortOnConnectFail = false;
     config.ConnectRetry = 5;
     config.ConnectTimeout = 10000;
-    Console.WriteLine($"[Manual Redis] Conectando em: {redisConnectionString}");
     return ConnectionMultiplexer.Connect(config);
 });
 

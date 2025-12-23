@@ -29,15 +29,13 @@ public class ManualChatHub : Hub
 
     /// <summary>
     /// Envia mensagem de chat.
-    /// 
+    ///
     /// IMPORTANTE: NÃO chamamos Clients.All.SendAsync() aqui!
     /// Em vez disso, publicamos no Redis e deixamos o Subscriber
     /// propagar para todos os clientes (incluindo os nossos).
     /// </summary>
     public async Task SendMessage(string user, string message)
     {
-        Console.WriteLine($"[{_serverId}] ManualChatHub.SendMessage: {user} -> {message}");
-        
         // Publica no Redis - o Subscriber cuidará de distribuir
         await _publisher.PublishMessageAsync(user, message);
         
@@ -59,8 +57,6 @@ public class ManualChatHub : Hub
     /// </summary>
     public override async Task OnConnectedAsync()
     {
-        Console.WriteLine($"[{_serverId}] ManualChatHub: Cliente conectado - {Context.ConnectionId}");
-
         await base.OnConnectedAsync();
     }
 
@@ -69,8 +65,6 @@ public class ManualChatHub : Hub
     /// </summary>
     public override async Task OnDisconnectedAsync(Exception? exception)
     {
-        Console.WriteLine($"[{_serverId}] ManualChatHub: Cliente desconectado - {Context.ConnectionId}");
-
         await base.OnDisconnectedAsync(exception);
     }
 }
