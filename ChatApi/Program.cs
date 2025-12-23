@@ -5,8 +5,6 @@ using StackExchange.Redis;
 var builder = WebApplication.CreateBuilder(args);
 
 var redisConnectionString = builder.Configuration.GetConnectionString("Redis");
-var serverId = Environment.GetEnvironmentVariable("SERVER_ID") ?? "Local";
-
 
 builder.Services.AddSignalR()
     .AddStackExchangeRedis(redisConnectionString, options =>
