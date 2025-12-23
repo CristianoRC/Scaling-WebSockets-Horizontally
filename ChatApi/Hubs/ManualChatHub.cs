@@ -55,28 +55,22 @@ public class ManualChatHub : Hub
     }
 
     /// <summary>
-    /// Quando um cliente conecta, publica evento no Redis.
+    /// Quando um cliente conecta.
     /// </summary>
     public override async Task OnConnectedAsync()
     {
         Console.WriteLine($"[{_serverId}] ManualChatHub: Cliente conectado - {Context.ConnectionId}");
-        
-        // Publica evento de conexão para todos os servidores
-        await _publisher.PublishUserConnectedAsync(Context.ConnectionId);
-        
+
         await base.OnConnectedAsync();
     }
 
     /// <summary>
-    /// Quando um cliente desconecta, publica evento no Redis.
+    /// Quando um cliente desconecta.
     /// </summary>
     public override async Task OnDisconnectedAsync(Exception? exception)
     {
         Console.WriteLine($"[{_serverId}] ManualChatHub: Cliente desconectado - {Context.ConnectionId}");
-        
-        // Publica evento de desconexão para todos os servidores
-        await _publisher.PublishUserDisconnectedAsync(Context.ConnectionId);
-        
+
         await base.OnDisconnectedAsync(exception);
     }
 }

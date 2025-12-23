@@ -35,11 +35,6 @@ public class RedisSubscriber : BackgroundService
             async void (channel, message) => await HandleChatMessage(channel, message, stoppingToken)
         );
 
-        await subscriber.SubscribeAsync(
-            RedisChannel.Literal("chat:connections"),
-            async void (channel, message) => await HandleConnectionEvent(channel, message, stoppingToken)
-        );
-
         await Task.Delay(Timeout.Infinite, stoppingToken);
     }
 
@@ -59,25 +54,4 @@ public class RedisSubscriber : BackgroundService
             stoppingToken
         );
     }
-
-    /// <summary>
-    /// Processa eventos de conexão/desconexão recebidos do Redis.
-    /// </summary>
-    private async Task HandleConnectionEvent(RedisChannel _, RedisValue message, CancellationToken stoppingToken)
-    {
-        var connEvent = JsonSerializer.Deserialize<ConnectionEvent>(message.ToString());
-        if (connEvent == null) return;
-
-        var methodName = connEvent.Type == "connected"
-            ? "UserConnected"
-            : "UserDisconnected";
-
-        await _hubContext.Clients.All.SendAsync(
-            methodName,
-            connEvent.ConnectionId,
-            connEvent.ServerId,
-            stoppingToken
-        );
-    }
 }
-

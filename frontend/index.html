@@ -659,14 +659,6 @@
             updateServerStatus(serverId);
         });
 
-        connection.on('UserConnected', (connId, serverId) => {
-            addSystemMessage(`Nova conexão via ${serverId}`);
-        });
-
-        connection.on('UserDisconnected', (connId, serverId) => {
-            addSystemMessage(`Usuário desconectou via ${serverId}`);
-        });
-
         connection.onreconnecting(() => {
             updateStatus('Reconectando...', false);
             setInputState(false);

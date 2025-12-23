@@ -55,50 +55,6 @@ public class RedisPublisher
 
         Console.WriteLine($"[{_serverId}] PUBLISH {ChatChannel} -> {user}: {message}");
     }
-
-    /// <summary>
-    /// Publica evento de conexão de usuário.
-    /// </summary>
-    public async Task PublishUserConnectedAsync(string connectionId)
-    {
-        var eventData = new ConnectionEvent
-        {
-            Type = "connected",
-            ConnectionId = connectionId,
-            ServerId = _serverId,
-            Timestamp = DateTime.UtcNow
-        };
-
-        var json = JsonSerializer.Serialize(eventData);
-        await _subscriber.PublishAsync(
-            RedisChannel.Literal("chat:connections"), 
-            json
-        );
-
-        Console.WriteLine($"[{_serverId}] PUBLISH chat:connections -> connected: {connectionId}");
-    }
-
-    /// <summary>
-    /// Publica evento de desconexão de usuário.
-    /// </summary>
-    public async Task PublishUserDisconnectedAsync(string connectionId)
-    {
-        var eventData = new ConnectionEvent
-        {
-            Type = "disconnected",
-            ConnectionId = connectionId,
-            ServerId = _serverId,
-            Timestamp = DateTime.UtcNow
-        };
-
-        var json = JsonSerializer.Serialize(eventData);
-        await _subscriber.PublishAsync(
-            RedisChannel.Literal("chat:connections"), 
-            json
-        );
-
-        Console.WriteLine($"[{_serverId}] PUBLISH chat:connections -> disconnected: {connectionId}");
-    }
 }
 
 /// <summary>
@@ -111,15 +67,3 @@ public class ChatMessage
     public string ServerId { get; set; } = "";
     public DateTime Timestamp { get; set; }
 }
-
-/// <summary>
-/// Modelo de evento de conexão/desconexão.
-/// </summary>
-public class ConnectionEvent
-{
-    public string Type { get; set; } = "";
-    public string ConnectionId { get; set; } = "";
-    public string ServerId { get; set; } = "";
-    public DateTime Timestamp { get; set; }
-}
-

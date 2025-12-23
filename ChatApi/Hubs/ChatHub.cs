@@ -41,20 +41,17 @@ public class ChatHub : Hub
 
     public override async Task OnConnectedAsync()
     {
-        _logger.LogInformation("Cliente conectado ao servidor {ServerId}: {ConnectionId}", 
+        _logger.LogInformation("Cliente conectado ao servidor {ServerId}: {ConnectionId}",
             ServerId, Context.ConnectionId);
-        
-        // Notifica todos os clientes sobre nova conexão
-        await Clients.All.SendAsync("UserConnected", Context.ConnectionId, ServerId);
+
         await base.OnConnectedAsync();
     }
 
     public override async Task OnDisconnectedAsync(Exception? exception)
     {
-        _logger.LogInformation("Cliente desconectado do servidor {ServerId}: {ConnectionId}", 
+        _logger.LogInformation("Cliente desconectado do servidor {ServerId}: {ConnectionId}",
             ServerId, Context.ConnectionId);
-        
-        await Clients.All.SendAsync("UserDisconnected", Context.ConnectionId, ServerId);
+
         await base.OnDisconnectedAsync(exception);
     }
 }
