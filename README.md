@@ -1,79 +1,136 @@
-# SignalR + Redis - Escala Horizontal
+# 🚀 Escala Horizontal com WebSockets
 
-Demonstração de escala horizontal com WebSockets usando SignalR e Redis como backplane.
+## O Problema
 
-## Tecnologias
+Imagine que você tem um chat funcionando em **um servidor**. Tudo funciona bem.
 
-- .NET 10
-- SignalR
-- Redis (Pub/Sub)
-- Nginx (Load Balancer)
-- Docker Compose
+Mas e quando você precisa de **mais servidores** para aguentar mais usuários?
 
-## Como Executar
+```
+Usuário A conecta no Server-1
+Usuário B conecta no Server-2
+
+A envia mensagem... B não recebe! 😱
+```
+
+**Por quê?** Porque cada servidor só conhece seus próprios clientes.
+
+---
+
+## A Solução: Redis como "Ponte"
+
+O Redis funciona como um **mensageiro central** entre os servidores.
+
+```
+        Usuário A                              Usuário B
+            │                                      │
+            ▼                                      ▼
+       ┌─────────┐                           ┌─────────┐
+       │Server-1 │──── PUBLICA ────►  Redis  │Server-2 │
+       └─────────┘                     │     └─────────┘
+                                       │
+                         ◄── RECEBE ───┘
+```
+
+1. **Server-1** recebe mensagem do Usuário A
+2. **Server-1** publica no Redis
+3. **Redis** avisa todos os servidores
+4. **Server-2** recebe e envia pro Usuário B
+
+Agora todos recebem todas as mensagens! ✅
+
+---
+
+## Como Rodar
 
 ```bash
 docker-compose up --build
 ```
 
-Acesse: http://localhost:5000
+Acesse: **http://localhost:5000**
 
-## Dois Modos de Demonstração
+---
 
-### 🪄 Modo Automático (`/chatHub`)
-Usa `AddStackExchangeRedis()` - o SignalR cuida de tudo.
+## O Que Está Rodando
 
-```csharp
-builder.Services.AddSignalR()
-    .AddStackExchangeRedis(redisConnectionString);
+| Container | Função |
+|-----------|--------|
+| **nginx** | Serve o frontend + distribui conexões |
+| **server-1** | Instância 1 da API |
+| **server-2** | Instância 2 da API |
+| **server-3** | Instância 3 da API |
+| **redis** | Ponte de comunicação |
+
+---
+
+## Teste Você Mesmo
+
+1. Abra **3 abas** do navegador em http://localhost:5000
+2. Veja que cada aba pode conectar em um **servidor diferente**
+3. Envie uma mensagem em qualquer aba
+4. **Todas as abas recebem!** 🎉
+
+---
+
+## Dois Modos de Implementação
+
+### 🪄 Automático (`/chatHub`)
+O SignalR faz tudo sozinho. Você só adiciona uma linha de configuração.
+
+### 🔧 Manual (`/manualChatHub`)
+Implementação explícita do Pub/Sub. Mostra exatamente o que acontece por baixo dos panos.
+
+---
+
+## Comandos Úteis
+
+```bash
+# Ver logs de todos os servidores
+docker-compose logs -f
+
+# Ver logs de um servidor específico
+docker-compose logs -f server-1
+
+# Ver mensagens passando pelo Redis
+docker exec -it signalr-redis redis-cli monitor
+
+# Parar tudo
+docker-compose down
 ```
 
-### 🔧 Modo Manual (`/manualChatHub`)  
-Implementação explícita do Redis Pub/Sub.
+---
 
-```csharp
-// Publicar
-await subscriber.PublishAsync(channel, message);
-
-// Assinar
-await subscriber.SubscribeAsync(channel, (ch, msg) => { ... });
-```
-
-## Arquitetura
+## Arquitetura Visual
 
 ```
-Cliente → Nginx (LB) → Server-X → Redis PUBLISH
-                           │
-              ┌────────────┼────────────┐
-              ▼            ▼            ▼
-          Server-1     Server-2     Server-3
-          (SUBSCRIBE)  (SUBSCRIBE)  (SUBSCRIBE)
-              │            │            │
-              ▼            ▼            ▼
-          Clientes     Clientes     Clientes
+                         ┌──────────────┐
+                         │    NGINX     │
+                         │  porta 5000  │
+                         └──────┬───────┘
+                                │
+          ┌─────────────────────┼─────────────────────┐
+          │                     │                     │
+          ▼                     ▼                     ▼
+    ┌──────────┐          ┌──────────┐          ┌──────────┐
+    │ Server-1 │          │ Server-2 │          │ Server-3 │
+    │  (API)   │          │  (API)   │          │  (API)   │
+    └────┬─────┘          └────┬─────┘          └────┬─────┘
+         │                     │                     │
+         └─────────────────────┼─────────────────────┘
+                               │
+                               ▼
+                        ┌─────────────┐
+                        │    REDIS    │
+                        │ (mensageiro)│
+                        └─────────────┘
 ```
 
-## Estrutura
+---
 
-```
-├── ChatApi/
-│   ├── Hubs/
-│   │   ├── ChatHub.cs        # Hub automático
-│   │   └── ManualChatHub.cs  # Hub manual
-│   ├── Services/
-│   │   ├── RedisPublisher.cs # Publica no Redis
-│   │   └── RedisSubscriber.cs# Assina o Redis
-│   ├── wwwroot/index.html    # Frontend
-│   ├── Program.cs
-│   └── Dockerfile
-├── docker-compose.yml
-├── nginx.conf
-└── README.md
-```
+## Resumo
 
-## Demonstração
-
-1. Abra várias abas em http://localhost:5000
-2. Alterne entre modo Automático e Manual
-3. Envie mensagens e veja a propagação via Redis
-4. Observe os logs: `docker-compose logs -f`
+| Sem Redis | Com Redis |
+|-----------|-----------|
+| Cada servidor isolado | Servidores conectados |
+| Mensagem fica presa | Mensagem propaga |
+| Não escala | Escala horizontal ✅ |

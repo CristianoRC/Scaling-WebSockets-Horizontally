@@ -1,7 +1,7 @@
 # Docker Compose para demonstração de escala horizontal com SignalR + Redis
 # 
 # Arquitetura:
-#   - nginx: Load balancer que distribui requisições entre os servidores
+#   - nginx: Load balancer + servidor do frontend estático
 #   - server-1, server-2, server-3: Três instâncias da API SignalR
 #   - redis: Backplane para Pub/Sub entre as instâncias
 #
@@ -74,8 +74,8 @@ services:
     expose:
       - "8080"
 
-  # Nginx - Load Balancer
-  # Distribui conexões WebSocket entre os servidores usando IP Hash
+  # Nginx - Load Balancer + Frontend Estático
+  # Serve o frontend e distribui conexões WebSocket entre os servidores
   nginx:
     image: nginx:alpine
     container_name: signalr-nginx
@@ -83,6 +83,7 @@ services:
       - "5000:80"
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./frontend:/usr/share/nginx/html:ro
     depends_on:
       - server-1
       - server-2
@@ -93,4 +94,3 @@ services:
 networks:
   signalr-network:
     driver: bridge
-

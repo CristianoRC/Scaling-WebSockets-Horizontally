@@ -1,98 +1,81 @@
-using Microsoft.AspNetCore.SignalR;
 using ChatApi.Services;
+using Microsoft.AspNetCore.SignalR;
 
 namespace ChatApi.Hubs;
 
 /// <summary>
-/// Hub do SignalR com implementação MANUAL do Redis Pub/Sub.
-/// Diferente do ChatHub que usa .AddStackExchangeRedis() automático,
-/// este Hub mostra explicitamente como funciona a comunicação.
+/// Hub SignalR com implementação MANUAL do Redis Pub/Sub.
 /// 
-/// FLUXO:
-/// 1. Cliente envia mensagem via WebSocket
-/// 2. Hub PUBLICA no Redis (RedisPublisher)
-/// 3. Redis propaga para todos os assinantes
-/// 4. RedisSubscriber recebe em TODAS as instâncias
-/// 5. Cada instância envia para seus clientes locais
+/// Diferente do ChatHub (que usa AddStackExchangeRedis automático),
+/// este hub mostra explicitamente como funciona a propagação:
+/// 
+/// 1. Cliente envia mensagem para ESTE servidor
+/// 2. Hub publica no Redis via RedisPublisher
+/// 3. RedisSubscriber em TODAS as instâncias recebe
+/// 4. Cada instância envia para seus clientes locais
+/// 
+/// Isso é exatamente o que AddStackExchangeRedis faz internamente!
 /// </summary>
 public class ManualChatHub : Hub
 {
     private readonly RedisPublisher _publisher;
-    private readonly ILogger<ManualChatHub> _logger;
-    private static readonly string ServerId = Environment.GetEnvironmentVariable("SERVER_ID") ?? "Unknown";
+    private readonly string _serverId;
 
-    public ManualChatHub(RedisPublisher publisher, ILogger<ManualChatHub> logger)
+    public ManualChatHub(RedisPublisher publisher)
     {
         _publisher = publisher;
-        _logger = logger;
+        _serverId = Environment.GetEnvironmentVariable("SERVER_ID") ?? "Local";
     }
 
     /// <summary>
-    /// Envia uma mensagem - PUBLICA no Redis manualmente.
+    /// Envia mensagem de chat.
+    /// 
+    /// IMPORTANTE: NÃO chamamos Clients.All.SendAsync() aqui!
+    /// Em vez disso, publicamos no Redis e deixamos o Subscriber
+    /// propagar para todos os clientes (incluindo os nossos).
     /// </summary>
     public async Task SendMessage(string user, string message)
     {
-        _logger.LogInformation(
-            "[HUB] Mensagem recebida no {ServerId}: {User} -> {Message}", 
-            ServerId, user, message);
+        Console.WriteLine($"[{_serverId}] ManualChatHub.SendMessage: {user} -> {message}");
         
-        // Cria o objeto da mensagem
-        var chatMessage = new ChatMessage
-        {
-            User = user,
-            Text = message,
-            ServerId = ServerId,
-            Type = "message"
-        };
+        // Publica no Redis - o Subscriber cuidará de distribuir
+        await _publisher.PublishMessageAsync(user, message);
         
-        // PUBLICA no Redis - todos os servidores receberão
-        await _publisher.PublishMessageAsync(chatMessage);
-        
-        // NÃO chamamos Clients.All aqui!
-        // O RedisSubscriber vai receber do Redis e fazer isso
+        // NÃO fazemos isso aqui, senão a mensagem chegaria duplicada
+        // para os clientes conectados neste servidor:
+        // await Clients.All.SendAsync("ReceiveMessage", user, message, _serverId);
     }
 
     /// <summary>
-    /// Retorna informações do servidor atual.
+    /// Retorna informações sobre qual servidor está processando esta conexão.
     /// </summary>
     public async Task GetServerInfo()
     {
-        // Este é chamado apenas para o cliente que pediu (não precisa do Redis)
-        await Clients.Caller.SendAsync("ServerInfo", ServerId, Context.ConnectionId);
+        await Clients.Caller.SendAsync("ServerInfo", _serverId, Context.ConnectionId);
     }
 
+    /// <summary>
+    /// Quando um cliente conecta, publica evento no Redis.
+    /// </summary>
     public override async Task OnConnectedAsync()
     {
-        _logger.LogInformation(
-            "[HUB] Cliente conectado ao {ServerId}: {ConnectionId}", 
-            ServerId, Context.ConnectionId);
+        Console.WriteLine($"[{_serverId}] ManualChatHub: Cliente conectado - {Context.ConnectionId}");
         
-        // Publica evento de conexão no Redis
-        await _publisher.PublishMessageAsync(new ChatMessage
-        {
-            Type = "connected",
-            ServerId = ServerId,
-            ConnectionId = Context.ConnectionId,
-            User = "Sistema"
-        });
+        // Publica evento de conexão para todos os servidores
+        await _publisher.PublishUserConnectedAsync(Context.ConnectionId);
         
         await base.OnConnectedAsync();
     }
 
+    /// <summary>
+    /// Quando um cliente desconecta, publica evento no Redis.
+    /// </summary>
     public override async Task OnDisconnectedAsync(Exception? exception)
     {
-        _logger.LogInformation(
-            "[HUB] Cliente desconectado do {ServerId}: {ConnectionId}", 
-            ServerId, Context.ConnectionId);
+        Console.WriteLine($"[{_serverId}] ManualChatHub: Cliente desconectado - {Context.ConnectionId}");
         
-        // Publica evento de desconexão no Redis
-        await _publisher.PublishMessageAsync(new ChatMessage
-        {
-            Type = "disconnected",
-            ServerId = ServerId,
-            ConnectionId = Context.ConnectionId,
-            User = "Sistema"
-        });
+        // Publica evento de desconexão para todos os servidores
+        await _publisher.PublishUserDisconnectedAsync(Context.ConnectionId);
         
         await base.OnDisconnectedAsync(exception);
     }

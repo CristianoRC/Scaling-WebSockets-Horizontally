@@ -23,14 +23,14 @@ Console.WriteLine($"========================================");
 builder.Services.AddSignalR()
     .AddStackExchangeRedis(redisConnectionString, options =>
     {
-        options.Configuration.ChannelPrefix = new StackExchange.Redis.RedisChannel(
+        options.Configuration.ChannelPrefix = new RedisChannel(
             "ChatApp", 
-            StackExchange.Redis.RedisChannel.PatternMode.Literal);
+            RedisChannel.PatternMode.Literal);
     });
 
 // ============================================================
-// OPÇÃO 2: MANUAL (Pub/Sub na mão)
-// Mostra exatamente o que acontece por baixo dos panos
+// OPÇÃO 2: MANUAL (Pub/Sub explícito)
+// Para fins didáticos - mostra o que acontece internamente
 // ============================================================
 
 // Conexão com Redis (singleton para reusar conexões)
@@ -64,16 +64,14 @@ builder.Services.AddCors(options =>
 var app = builder.Build();
 
 app.UseCors();
-app.UseDefaultFiles();
-app.UseStaticFiles();
 
 // Hub AUTOMÁTICO - usa AddStackExchangeRedis por baixo
 app.MapHub<ChatHub>("/chatHub");
 
-// Hub MANUAL - usa nosso Pub/Sub explícito
+// Hub MANUAL - usa nosso Pub/Sub explícito (para fins didáticos)
 app.MapHub<ManualChatHub>("/manualChatHub");
 
-// Endpoints de informação
+// Health check
 app.MapGet("/health", () => new { 
     Status = "Healthy", 
     Server = serverId,

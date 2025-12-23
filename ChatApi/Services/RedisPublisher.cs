@@ -1,58 +1,125 @@
-using StackExchange.Redis;
 using System.Text.Json;
+using StackExchange.Redis;
 
 namespace ChatApi.Services;
 
 /// <summary>
-/// Serviço para PUBLICAR mensagens no Redis.
-/// Quando uma mensagem chega em qualquer servidor, ela é publicada aqui.
+/// Serviço responsável por PUBLICAR mensagens no Redis.
+/// 
+/// Este é o "emissor" do padrão Pub/Sub:
+/// - Recebe mensagens do Hub
+/// - Serializa para JSON
+/// - Publica no canal Redis
+/// 
+/// Todas as instâncias que assinam o canal receberão a mensagem.
 /// </summary>
 public class RedisPublisher
 {
     private readonly IConnectionMultiplexer _redis;
     private readonly ISubscriber _subscriber;
-    private readonly ILogger<RedisPublisher> _logger;
+    private readonly string _serverId;
     
-    // Canal onde as mensagens serão publicadas
-    public const string ChatChannel = "chat:messages";
-    
-    public RedisPublisher(IConnectionMultiplexer redis, ILogger<RedisPublisher> logger)
+    // Canal onde as mensagens de chat são publicadas
+    private const string ChatChannel = "chat:messages";
+
+    public RedisPublisher(IConnectionMultiplexer redis)
     {
         _redis = redis;
         _subscriber = redis.GetSubscriber();
-        _logger = logger;
+        _serverId = Environment.GetEnvironmentVariable("SERVER_ID") ?? "Local";
+        
+        Console.WriteLine($"[{_serverId}] RedisPublisher inicializado");
     }
 
     /// <summary>
-    /// Publica uma mensagem no Redis.
-    /// Todos os servidores que assinam este canal receberão a mensagem.
+    /// Publica uma mensagem de chat no Redis.
+    /// Todas as instâncias assinando "chat:messages" receberão.
     /// </summary>
-    public async Task PublishMessageAsync(ChatMessage message)
+    public async Task PublishMessageAsync(string user, string message)
     {
-        var json = JsonSerializer.Serialize(message);
+        var chatMessage = new ChatMessage
+        {
+            User = user,
+            Text = message,
+            ServerId = _serverId,
+            Timestamp = DateTime.UtcNow
+        };
+
+        var json = JsonSerializer.Serialize(chatMessage);
         
-        _logger.LogInformation(
-            "[REDIS PUB] Publicando no canal '{Channel}': {User} -> {Message}", 
-            ChatChannel, message.User, message.Text);
-        
-        // PUBLISH - envia para todos os assinantes
+        // PUBLISH chat:messages "{...json...}"
         await _subscriber.PublishAsync(
             RedisChannel.Literal(ChatChannel), 
             json
         );
+
+        Console.WriteLine($"[{_serverId}] PUBLISH {ChatChannel} -> {user}: {message}");
+    }
+
+    /// <summary>
+    /// Publica evento de conexão de usuário.
+    /// </summary>
+    public async Task PublishUserConnectedAsync(string connectionId)
+    {
+        var eventData = new ConnectionEvent
+        {
+            Type = "connected",
+            ConnectionId = connectionId,
+            ServerId = _serverId,
+            Timestamp = DateTime.UtcNow
+        };
+
+        var json = JsonSerializer.Serialize(eventData);
+        await _subscriber.PublishAsync(
+            RedisChannel.Literal("chat:connections"), 
+            json
+        );
+
+        Console.WriteLine($"[{_serverId}] PUBLISH chat:connections -> connected: {connectionId}");
+    }
+
+    /// <summary>
+    /// Publica evento de desconexão de usuário.
+    /// </summary>
+    public async Task PublishUserDisconnectedAsync(string connectionId)
+    {
+        var eventData = new ConnectionEvent
+        {
+            Type = "disconnected",
+            ConnectionId = connectionId,
+            ServerId = _serverId,
+            Timestamp = DateTime.UtcNow
+        };
+
+        var json = JsonSerializer.Serialize(eventData);
+        await _subscriber.PublishAsync(
+            RedisChannel.Literal("chat:connections"), 
+            json
+        );
+
+        Console.WriteLine($"[{_serverId}] PUBLISH chat:connections -> disconnected: {connectionId}");
     }
 }
 
 /// <summary>
-/// Modelo da mensagem que será serializada e enviada pelo Redis.
+/// Modelo de mensagem de chat que trafega pelo Redis.
 /// </summary>
 public class ChatMessage
 {
     public string User { get; set; } = "";
     public string Text { get; set; } = "";
     public string ServerId { get; set; } = "";
-    public string Type { get; set; } = "message"; // message, connected, disconnected
-    public string? ConnectionId { get; set; }
-    public DateTime Timestamp { get; set; } = DateTime.UtcNow;
+    public DateTime Timestamp { get; set; }
+}
+
+/// <summary>
+/// Modelo de evento de conexão/desconexão.
+/// </summary>
+public class ConnectionEvent
+{
+    public string Type { get; set; } = "";
+    public string ConnectionId { get; set; } = "";
+    public string ServerId { get; set; } = "";
+    public DateTime Timestamp { get; set; }
 }
 

@@ -1,103 +1,114 @@
-using Microsoft.AspNetCore.SignalR;
-using StackExchange.Redis;
 using System.Text.Json;
 using ChatApi.Hubs;
+using Microsoft.AspNetCore.SignalR;
+using StackExchange.Redis;
 
 namespace ChatApi.Services;
 
 /// <summary>
-/// Serviço que ASSINA o canal do Redis e repassa mensagens para clientes locais.
-/// Este serviço roda em TODAS as instâncias do servidor.
+/// Serviço que ASSINA canais do Redis e propaga mensagens para clientes SignalR.
+/// 
+/// Este é o "receptor" do padrão Pub/Sub:
+/// - Roda como BackgroundService (sempre ativo)
+/// - Assina canais do Redis
+/// - Quando recebe mensagem, envia para TODOS os clientes conectados NESTA instância
+/// 
+/// Cada instância do servidor tem seu próprio Subscriber rodando.
+/// Isso garante que mensagens publicadas em qualquer servidor
+/// cheguem a todos os clientes em todas as instâncias.
 /// </summary>
 public class RedisSubscriber : BackgroundService
 {
     private readonly IConnectionMultiplexer _redis;
     private readonly IHubContext<ManualChatHub> _hubContext;
-    private readonly ILogger<RedisSubscriber> _logger;
     private readonly string _serverId;
 
     public RedisSubscriber(
         IConnectionMultiplexer redis,
-        IHubContext<ManualChatHub> hubContext,
-        ILogger<RedisSubscriber> logger)
+        IHubContext<ManualChatHub> hubContext)
     {
         _redis = redis;
         _hubContext = hubContext;
-        _logger = logger;
-        _serverId = Environment.GetEnvironmentVariable("SERVER_ID") ?? "Unknown";
+        _serverId = Environment.GetEnvironmentVariable("SERVER_ID") ?? "Local";
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        var subscriber = _redis.GetSubscriber();
+        Console.WriteLine($"[{_serverId}] RedisSubscriber iniciando...");
         
-        _logger.LogInformation(
-            "[REDIS SUB] Servidor {ServerId} assinando canal '{Channel}'...", 
-            _serverId, RedisPublisher.ChatChannel);
+        var subscriber = _redis.GetSubscriber();
 
-        // SUBSCRIBE - recebe mensagens de todos os publishers
+        // ============================================================
+        // SUBSCRIBE chat:messages
+        // Recebe mensagens de chat de qualquer servidor
+        // ============================================================
         await subscriber.SubscribeAsync(
-            RedisChannel.Literal(RedisPublisher.ChatChannel),
+            RedisChannel.Literal("chat:messages"),
             async (channel, message) =>
             {
-                await HandleMessage(message!);
+                try
+                {
+                    var chatMessage = JsonSerializer.Deserialize<ChatMessage>(message!);
+                    if (chatMessage == null) return;
+
+                    Console.WriteLine($"[{_serverId}] RECEIVED from {chatMessage.ServerId}: {chatMessage.User} -> {chatMessage.Text}");
+
+                    // Envia para TODOS os clientes conectados nesta instância
+                    await _hubContext.Clients.All.SendAsync(
+                        "ReceiveMessage",
+                        chatMessage.User,
+                        chatMessage.Text,
+                        chatMessage.ServerId,
+                        stoppingToken
+                    );
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"[{_serverId}] Erro ao processar mensagem: {ex.Message}");
+                }
             }
         );
 
-        _logger.LogInformation(
-            "[REDIS SUB] Servidor {ServerId} assinado com sucesso!", _serverId);
+        Console.WriteLine($"[{_serverId}] ✓ Subscribed to chat:messages");
+
+        // ============================================================
+        // SUBSCRIBE chat:connections
+        // Recebe eventos de conexão/desconexão de qualquer servidor
+        // ============================================================
+        await subscriber.SubscribeAsync(
+            RedisChannel.Literal("chat:connections"),
+            async (channel, message) =>
+            {
+                try
+                {
+                    var connEvent = JsonSerializer.Deserialize<ConnectionEvent>(message!);
+                    if (connEvent == null) return;
+
+                    Console.WriteLine($"[{_serverId}] RECEIVED connection event: {connEvent.Type} from {connEvent.ServerId}");
+
+                    var methodName = connEvent.Type == "connected" 
+                        ? "UserConnected" 
+                        : "UserDisconnected";
+
+                    await _hubContext.Clients.All.SendAsync(
+                        methodName,
+                        connEvent.ConnectionId,
+                        connEvent.ServerId,
+                        stoppingToken
+                    );
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"[{_serverId}] Erro ao processar evento de conexão: {ex.Message}");
+                }
+            }
+        );
+
+        Console.WriteLine($"[{_serverId}] ✓ Subscribed to chat:connections");
+        Console.WriteLine($"[{_serverId}] RedisSubscriber pronto e aguardando mensagens...");
 
         // Mantém o serviço rodando
         await Task.Delay(Timeout.Infinite, stoppingToken);
-    }
-
-    /// <summary>
-    /// Processa mensagens recebidas do Redis e envia para clientes locais via SignalR.
-    /// </summary>
-    private async Task HandleMessage(string messageJson)
-    {
-        try
-        {
-            var message = JsonSerializer.Deserialize<ChatMessage>(messageJson);
-            if (message == null) return;
-
-            _logger.LogInformation(
-                "[REDIS SUB] Servidor {ServerId} recebeu: {Type} de {User} (origem: {Origin})",
-                _serverId, message.Type, message.User, message.ServerId);
-
-            // Envia para TODOS os clientes conectados NESTE servidor
-            switch (message.Type)
-            {
-                case "message":
-                    await _hubContext.Clients.All.SendAsync(
-                        "ReceiveMessage", 
-                        message.User, 
-                        message.Text, 
-                        message.ServerId
-                    );
-                    break;
-                    
-                case "connected":
-                    await _hubContext.Clients.All.SendAsync(
-                        "UserConnected", 
-                        message.ConnectionId, 
-                        message.ServerId
-                    );
-                    break;
-                    
-                case "disconnected":
-                    await _hubContext.Clients.All.SendAsync(
-                        "UserDisconnected", 
-                        message.ConnectionId, 
-                        message.ServerId
-                    );
-                    break;
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "[REDIS SUB] Erro ao processar mensagem");
-        }
     }
 }
 
