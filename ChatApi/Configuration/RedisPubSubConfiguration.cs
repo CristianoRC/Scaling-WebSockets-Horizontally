@@ -8,6 +8,8 @@ public static class RedisPubSubConfiguration
 {
     public static void AddRedisPubSub(this IServiceCollection services, IConfiguration configuration)
     {
+        services.AddSignalR();
+        
         var redisConnectionString = configuration.GetConnectionString("Redis");
         if (string.IsNullOrEmpty(redisConnectionString))
             throw new Exception("Redis Connection string is null or empty");

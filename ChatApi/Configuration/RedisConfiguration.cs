@@ -10,10 +10,9 @@ public static class RedisConfiguration
         var redisConnectionString = configuration.GetConnectionString("Redis");
         if (string.IsNullOrEmpty(redisConnectionString))
             throw new Exception("Redis Connection string is null or empty");
-        
-        var signalrBuilder = services.AddSignalR();
-
         var redisChannel = new RedisChannel("ChatApp", RedisChannel.PatternMode.Literal);
+
+        var signalrBuilder = services.AddSignalR();
         signalrBuilder.AddStackExchangeRedis(redisConnectionString, options =>
         {
             options.Configuration.AbortOnConnectFail = false;
