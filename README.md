@@ -40,53 +40,9 @@ Acesse: **http://localhost:8080**
 
 ---
 
-## Arquitetura C4 Model
+## Arquitetura
 
-> 📁 **Diagramas PlantUML**: Disponíveis em [`docs/c4/`](docs/c4/README.md) com renderização automática.
-
-### Nível 1: Contexto do Sistema
-
-```mermaid
-C4Context
-    title Sistema de Chat - Diagrama de Contexto
-
-    Person(user, "Usuário", "Pessoa que usa o chat em tempo real")
-    
-    System(chatSystem, "Sistema de Chat", "Permite enviar e receber mensagens em tempo real com escala horizontal")
-
-    Rel(user, chatSystem, "Envia e recebe mensagens", "HTTP/WebSocket")
-```
-
----
-
-### Nível 2: Diagrama de Containers
-
-```mermaid
-C4Container
-    title Sistema de Chat - Diagrama de Containers
-
-    Person(user, "Usuário", "Pessoa que usa o chat")
-
-    Container_Boundary(system, "Sistema de Chat") {
-        Container(nginx, "NGINX", "Load Balancer", "Serve frontend estático e distribui conexões WebSocket via ip_hash")
-        
-        Container(server1, "Server-1", ".NET 10 / SignalR", "Instância 1 da API de chat")
-        Container(server2, "Server-2", ".NET 10 / SignalR", "Instância 2 da API de chat")
-        Container(server3, "Server-3", ".NET 10 / SignalR", "Instância 3 da API de chat")
-        
-        ContainerDb(redis, "Redis", "Message Broker", "Pub/Sub backplane para propagar mensagens entre instâncias")
-    }
-
-    Rel(user, nginx, "Acessa", "HTTPS/WSS :8080")
-    Rel(nginx, server1, "Roteia", "HTTP/WS")
-    Rel(nginx, server2, "Roteia", "HTTP/WS")
-    Rel(nginx, server3, "Roteia", "HTTP/WS")
-    Rel(server1, redis, "Pub/Sub", "TCP :6379")
-    Rel(server2, redis, "Pub/Sub", "TCP :6379")
-    Rel(server3, redis, "Pub/Sub", "TCP :6379")
-```
-
----
+> 📐 **Documentação C4 Model completa**: [`docs/c4/`](docs/c4/README.md)
 
 ### Fluxo de Mensagem
 
@@ -146,39 +102,6 @@ flowchart TB
 
 ---
 
-### Nível 3: Componentes (Modo PubSub)
-
-Diagrama detalhado da implementação manual com Pub/Sub:
-
-```mermaid
-flowchart LR
-    subgraph API["API Server (.NET 10)"]
-        Hub[ManualChatHub<br/>SignalR Hub]
-        Pub[RedisPublisher<br/>Service]
-        Sub[RedisSubscriber<br/>BackgroundService]
-        Model[ChatMessage<br/>Record]
-        Ctx[IHubContext]
-    end
-    
-    Redis[(Redis<br/>chat:messages)]
-    
-    Hub -->|"1. PublishMessageAsync()"| Pub
-    Pub -->|"2. Cria"| Model
-    Pub -->|"3. PUBLISH"| Redis
-    Redis -->|"4. SUBSCRIBE"| Sub
-    Sub -->|"5. Deserializa"| Model
-    Sub -->|"6. SendAsync()"| Ctx
-    
-    style Hub fill:#60a5fa,stroke:#3b82f6,color:#000
-    style Pub fill:#34d399,stroke:#10b981,color:#000
-    style Sub fill:#fbbf24,stroke:#f59e0b,color:#000
-    style Redis fill:#f87171,stroke:#ef4444,color:#000
-```
-
-> 📄 Diagrama completo em PlantUML: [`docs/c4/C3_Component_PubSub.puml`](docs/c4/C3_Component_PubSub.puml)
-
----
-
 ## O Que Está Rodando
 
 | Container | Tipo | Função |
@@ -209,6 +132,8 @@ O SignalR faz tudo sozinho. Você só adiciona uma linha de configuração.
 
 ### 🔧 Manual (`Redis__Mode: PubSub`)
 Implementação explícita do Pub/Sub. Mostra exatamente o que acontece por baixo dos panos.
+
+> 📐 Veja o diagrama de componentes em [`docs/c4/`](docs/c4/README.md)
 
 ---
 
