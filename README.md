@@ -167,10 +167,12 @@ flowchart TB
 
 ## Dois Modos de Implementação
 
-### 🪄 Automático (`/chatHub`)
+O modo é configurado via variável de ambiente `Redis__Mode` no `docker-compose.yml`.
+
+### 🪄 Automático (`Redis__Mode: SignalR`)
 O SignalR faz tudo sozinho. Você só adiciona uma linha de configuração.
 
-### 🔧 Manual (`/manualChatHub`)
+### 🔧 Manual (`Redis__Mode: PubSub`)
 Implementação explícita do Pub/Sub. Mostra exatamente o que acontece por baixo dos panos.
 
 ---
