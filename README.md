@@ -46,11 +46,11 @@ Acesse: **http://localhost:8080**
 
 | Diagrama | Descrição |
 |----------|-----------|
-| [**C1 - Contexto**](docs/c4/README.md) | Visão geral do sistema |
-| [**C2 - Container**](docs/c4/README.md) | Aplicações e data stores |
-| [**C3 - Componentes**](docs/c4/README.md) | Estrutura interna da API (modo PubSub) |
+| [**C1 - Contexto**](docs/README.md) | Visão geral do sistema |
+| [**C2 - Container**](docs/README.md) | Aplicações e data stores |
+| [**C3 - Componentes**](docs/README.md) | Estrutura interna da API (modo PubSub) |
 
-👉 **[Ver diagramas C4 completos](docs/c4/README.md)**
+👉 **[Ver diagramas C4 completos](docs/README.md)**
 
 ---
 
