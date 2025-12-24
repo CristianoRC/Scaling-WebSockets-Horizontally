@@ -21,8 +21,8 @@ COPY --from=build /app .
 EXPOSE 8080
 
 # Define variáveis de ambiente padrão
-ENV ASPNETCORE_URLS=http://+:8080
 ENV ASPNETCORE_ENVIRONMENT=Production
+ENV HTTP_PORTS=8080
 
 ENTRYPOINT ["dotnet", "ChatApi.dll"]
 
