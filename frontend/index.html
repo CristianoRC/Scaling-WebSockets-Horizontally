@@ -250,9 +250,90 @@
         .message.from-server-2 .message-info { color: var(--server-2); }
         .message.from-server-3 .message-info { color: var(--server-3); }
 
+        /* Bordas coloridas nos balões de mensagens recebidas */
+        .message.from-server-1 .message-bubble { border-color: var(--server-1); border-left: 3px solid var(--server-1); }
+        .message.from-server-2 .message-bubble { border-color: var(--server-2); border-left: 3px solid var(--server-2); }
+        .message.from-server-3 .message-bubble { border-color: var(--server-3); border-left: 3px solid var(--server-3); }
+
         .message.own-message .message-info {
             color: rgba(0, 0, 0, 0.6);
             text-align: right;
+        }
+
+        /* ========== ESTILOS DINÂMICOS POR SERVIDOR ========== */
+        /* Server 1 - Verde/Teal */
+        body.connected-server-1 .chat-section {
+            border-color: var(--server-1);
+            box-shadow: 0 0 20px rgba(0, 212, 170, 0.15);
+        }
+        body.connected-server-1 .send-btn {
+            background: linear-gradient(135deg, var(--server-1), #00a88a);
+        }
+        body.connected-server-1 .send-btn:hover:not(:disabled) {
+            box-shadow: 0 10px 25px -5px rgba(0, 212, 170, 0.4);
+        }
+        body.connected-server-1 .message.own-message .message-bubble {
+            background: var(--server-1);
+            border-color: var(--server-1);
+        }
+        body.connected-server-1 .message-input-group input:focus,
+        body.connected-server-1 .name-input input:focus {
+            border-color: var(--server-1);
+            box-shadow: 0 0 0 3px rgba(0, 212, 170, 0.3);
+        }
+        body.connected-server-1 .connection-dot.connected {
+            background: var(--server-1);
+            box-shadow: 0 0 15px rgba(0, 212, 170, 0.5);
+        }
+
+        /* Server 2 - Roxo */
+        body.connected-server-2 .chat-section {
+            border-color: var(--server-2);
+            box-shadow: 0 0 20px rgba(168, 85, 247, 0.15);
+        }
+        body.connected-server-2 .send-btn {
+            background: linear-gradient(135deg, var(--server-2), #9333ea);
+        }
+        body.connected-server-2 .send-btn:hover:not(:disabled) {
+            box-shadow: 0 10px 25px -5px rgba(168, 85, 247, 0.4);
+        }
+        body.connected-server-2 .message.own-message .message-bubble {
+            background: var(--server-2);
+            border-color: var(--server-2);
+        }
+        body.connected-server-2 .message-input-group input:focus,
+        body.connected-server-2 .name-input input:focus {
+            border-color: var(--server-2);
+            box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.3);
+        }
+        body.connected-server-2 .connection-dot.connected {
+            background: var(--server-2);
+            box-shadow: 0 0 15px rgba(168, 85, 247, 0.5);
+        }
+
+        /* Server 3 - Laranja/Âmbar */
+        body.connected-server-3 .chat-section {
+            border-color: var(--server-3);
+            box-shadow: 0 0 20px rgba(245, 158, 11, 0.15);
+        }
+        body.connected-server-3 .send-btn {
+            background: linear-gradient(135deg, var(--server-3), #d97706);
+        }
+        body.connected-server-3 .send-btn:hover:not(:disabled) {
+            box-shadow: 0 10px 25px -5px rgba(245, 158, 11, 0.4);
+        }
+        body.connected-server-3 .message.own-message .message-bubble {
+            background: var(--server-3);
+            border-color: var(--server-3);
+        }
+        body.connected-server-3 .message-input-group input:focus,
+        body.connected-server-3 .name-input input:focus {
+            border-color: var(--server-3);
+            box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.3);
+        }
+        body.connected-server-3 .connection-dot.connected {
+            background: var(--server-3);
+            box-shadow: 0 0 15px rgba(245, 158, 11, 0.5);
         }
 
         .system-message {
@@ -657,6 +738,9 @@
             
             // Update sidebar
             updateServerStatus(serverId);
+            
+            // Atualiza classe do body para cores dinâmicas
+            updateBodyServerClass(serverId);
         });
 
         connection.onreconnecting(() => {
@@ -731,6 +815,17 @@
             document.querySelectorAll('.server-label').forEach(el => {
                 el.textContent = '—';
             });
+            // Remove classes de servidor do body
+            document.body.classList.remove('connected-server-1', 'connected-server-2', 'connected-server-3');
+        }
+
+        function updateBodyServerClass(serverId) {
+            // Remove todas as classes de servidor
+            document.body.classList.remove('connected-server-1', 'connected-server-2', 'connected-server-3');
+            
+            // Adiciona a classe correspondente ao servidor atual
+            const serverNum = serverId.replace('Server-', '');
+            document.body.classList.add(`connected-server-${serverNum}`);
         }
 
         function getInitials(name) {
