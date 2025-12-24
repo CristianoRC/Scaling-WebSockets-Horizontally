@@ -7,7 +7,7 @@ public static class RedisConfiguration
 {
     public static void AddRedisSignalR(this IServiceCollection services, IConfiguration configuration)
     {
-        var redisConnectionString = configuration.GetValue<string>("Redis");
+        var redisConnectionString = configuration.GetConnectionString("Redis");
         if (string.IsNullOrEmpty(redisConnectionString))
             throw new Exception("Redis Connection string is null or empty");
         
