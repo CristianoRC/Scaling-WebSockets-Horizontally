@@ -11,6 +11,11 @@ public class ChatHub : Hub
     
     private readonly string _serverId;
     
+    public async Task GetServerInfo()
+    {
+        await Clients.Caller.SendAsync("ServerInfo", _serverId, Context.ConnectionId);
+    }
+
     public async Task SendMessage(string user, string message)
     {
         // Envia a mensagem para TODOS os clientes (via Redis backplane)
