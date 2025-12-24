@@ -1,5 +1,13 @@
 # 🚀 Escala Horizontal com WebSockets
 
+> 📺 **Em breve!** Uma aula completa sobre este assunto será publicada no meu canal do YouTube!
+> 
+> [![YouTube](https://img.shields.io/badge/YouTube-Cristiano%20Raffi%20Cunha-red?style=for-the-badge&logo=youtube)](https://www.youtube.com/c/CristianoRaffiCunha)
+> 
+> 🔔 **Inscreva-se para não perder!**
+
+---
+
 ## O Problema
 
 Imagine que você tem um chat funcionando em **um servidor**. Tudo funciona bem.
