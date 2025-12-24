@@ -42,7 +42,17 @@ Acesse: **http://localhost:8080**
 
 ## Arquitetura
 
-> 📐 **Documentação C4 Model completa**: [`docs/c4/`](docs/c4/README.md)
+### 📐 Documentação C4 Model
+
+| Diagrama | Descrição |
+|----------|-----------|
+| [**C1 - Contexto**](docs/c4/README.md) | Visão geral do sistema |
+| [**C2 - Container**](docs/c4/README.md) | Aplicações e data stores |
+| [**C3 - Componentes**](docs/c4/README.md) | Estrutura interna da API (modo PubSub) |
+
+👉 **[Ver diagramas C4 completos](docs/c4/README.md)**
+
+---
 
 ### Fluxo de Mensagem
 
@@ -132,6 +142,3 @@ O SignalR faz tudo sozinho. Você só adiciona uma linha de configuração.
 
 ### 🔧 Manual (`Redis__Mode: PubSub`)
 Implementação explícita do Pub/Sub. Mostra exatamente o que acontece por baixo dos panos.
-
-**📐 Veja o diagrama de componentes em [`docs/c4/`](docs/c4/README.md)**
-
