@@ -133,32 +133,5 @@ O SignalR faz tudo sozinho. Você só adiciona uma linha de configuração.
 ### 🔧 Manual (`Redis__Mode: PubSub`)
 Implementação explícita do Pub/Sub. Mostra exatamente o que acontece por baixo dos panos.
 
-> 📐 Veja o diagrama de componentes em [`docs/c4/`](docs/c4/README.md)
+**📐 Veja o diagrama de componentes em [`docs/c4/`](docs/c4/README.md)**
 
----
-
-## Comandos Úteis
-
-```bash
-# Ver logs de todos os servidores
-docker-compose logs -f
-
-# Ver logs de um servidor específico
-docker-compose logs -f server-1
-
-# Ver mensagens passando pelo Redis
-docker exec -it signalr-redis redis-cli monitor
-
-# Parar tudo
-docker-compose down
-```
-
----
-
-## Resumo
-
-| Sem Redis | Com Redis |
-|-----------|-----------|
-| Cada servidor isolado | Servidores conectados |
-| Mensagem fica presa | Mensagem propaga |
-| Não escala | Escala horizontal ✅ |
