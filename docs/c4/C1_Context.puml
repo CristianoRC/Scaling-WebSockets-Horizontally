@@ -1,0 +1,13 @@
+@startuml C1_Context
+!include <C4/C4_Context>
+
+title Sistema de Chat - Diagrama de Contexto (C1)
+
+Person(user, "Usuário", "Pessoa que deseja enviar e receber mensagens em tempo real")
+
+System(chatSystem, "Sistema de Chat", "Permite comunicação em tempo real entre usuários com suporte a escala horizontal")
+
+Rel(user, chatSystem, "Envia e recebe mensagens", "WebSocket")
+
+SHOW_LEGEND()
+@enduml

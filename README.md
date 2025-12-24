@@ -42,6 +42,8 @@ Acesse: **http://localhost:8080**
 
 ## Arquitetura C4 Model
 
+> 📁 **Diagramas PlantUML**: Disponíveis em [`docs/c4/`](docs/c4/README.md) com renderização automática.
+
 ### Nível 1: Contexto do Sistema
 
 ```mermaid
@@ -141,6 +143,39 @@ flowchart TB
     style S2 fill:#c084fc,stroke:#a855f7,color:#000
     style S3 fill:#fbbf24,stroke:#f59e0b,color:#000
 ```
+
+---
+
+### Nível 3: Componentes (Modo PubSub)
+
+Diagrama detalhado da implementação manual com Pub/Sub:
+
+```mermaid
+flowchart LR
+    subgraph API["API Server (.NET 10)"]
+        Hub[ManualChatHub<br/>SignalR Hub]
+        Pub[RedisPublisher<br/>Service]
+        Sub[RedisSubscriber<br/>BackgroundService]
+        Model[ChatMessage<br/>Record]
+        Ctx[IHubContext]
+    end
+    
+    Redis[(Redis<br/>chat:messages)]
+    
+    Hub -->|"1. PublishMessageAsync()"| Pub
+    Pub -->|"2. Cria"| Model
+    Pub -->|"3. PUBLISH"| Redis
+    Redis -->|"4. SUBSCRIBE"| Sub
+    Sub -->|"5. Deserializa"| Model
+    Sub -->|"6. SendAsync()"| Ctx
+    
+    style Hub fill:#60a5fa,stroke:#3b82f6,color:#000
+    style Pub fill:#34d399,stroke:#10b981,color:#000
+    style Sub fill:#fbbf24,stroke:#f59e0b,color:#000
+    style Redis fill:#f87171,stroke:#ef4444,color:#000
+```
+
+> 📄 Diagrama completo em PlantUML: [`docs/c4/C3_Component_PubSub.puml`](docs/c4/C3_Component_PubSub.puml)
 
 ---
 

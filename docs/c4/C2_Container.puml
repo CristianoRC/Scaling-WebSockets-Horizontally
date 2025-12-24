@@ -1,0 +1,21 @@
+@startuml C2_Container
+!include <C4/C4_Container>
+
+title Sistema de Chat - Diagrama de Container (C2)
+
+Person(user, "Usuário", "Pessoa que deseja enviar e receber mensagens em tempo real")
+
+System_Boundary(chatSystem, "Sistema de Chat") {
+    Container(spa, "Single Page Application", "HTML, JavaScript", "Interface do usuário para envio e recebimento de mensagens em tempo real")
+    
+    Container(chatApi, "Chat API", ".NET 10, SignalR", "Gerencia conexões WebSocket e processa mensagens de chat")
+    
+    ContainerDb(redis, "Redis", "In-Memory Data Store", "Armazena e propaga mensagens entre instâncias da API via Pub/Sub")
+}
+
+Rel(user, spa, "Usa", "HTTPS")
+Rel(spa, chatApi, "Envia e recebe mensagens", "WebSocket")
+Rel(chatApi, redis, "Publica e assina mensagens", "TCP")
+
+SHOW_LEGEND()
+@enduml

@@ -1,0 +1,44 @@
+@startuml C4_Sequence_PubSub
+
+title Fluxo de Mensagem - Modo PubSub
+
+actor "Usuário A" as UserA
+box "Chat API - Instância 1" #LightBlue
+    participant "ManualChatHub" as Hub1
+    participant "RedisPublisher" as Pub1
+    participant "RedisSubscriber" as Sub1
+end box
+database "Redis" as Redis
+box "Chat API - Instância 2" #LightGreen
+    participant "RedisSubscriber" as Sub2
+    participant "IHubContext" as Ctx2
+end box
+actor "Usuário B" as UserB
+
+== Envio de Mensagem ==
+
+UserA -> Hub1: SendMessage(user, "Olá!")
+Hub1 -> Pub1: PublishMessageAsync(user, message)
+Pub1 -> Pub1: new ChatMessage { User, Text, ServerId, Timestamp }
+Pub1 -> Pub1: JsonSerializer.Serialize()
+Pub1 -> Redis: PUBLISH chat:messages
+
+== Propagação via Pub/Sub ==
+
+Redis --> Sub1: Notifica (channel, message)
+Redis --> Sub2: Notifica (channel, message)
+
+Sub1 -> Sub1: JsonSerializer.Deserialize()
+Sub1 -> Hub1: Clients.All.SendAsync("ReceiveMessage", ...)
+Hub1 --> UserA: ReceiveMessage
+
+Sub2 -> Sub2: JsonSerializer.Deserialize()
+Sub2 -> Ctx2: Clients.All.SendAsync("ReceiveMessage", ...)
+Ctx2 --> UserB: ReceiveMessage
+
+note over UserA, UserB
+    Mensagem propagada em tempo real
+    entre todas as instâncias!
+end note
+
+@enduml
