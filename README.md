@@ -74,7 +74,7 @@ sequenceDiagram
     participant B as 👤 User B
 
     A->>N: Envia "Olá!" (WebSocket)
-    N->>S1: Roteia (ip_hash)
+    N->>S1: Roteia (round robin)
     S1->>R: PUBLISH chat:messages
     R-->>S1: (recebe própria msg)
     R-->>S2: SUBSCRIBE notifica
