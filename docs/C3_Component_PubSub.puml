@@ -3,16 +3,15 @@
 
 title Chat API - Diagrama de Componentes (C3) - Modo PubSub
 
+
+LAYOUT_LANDSCAPE()
+
 Container(spa, "Single Page Application", "HTML, JavaScript", "Interface do usuário")
 
 Container_Boundary(chatApi, "Chat API") {
-    Component(hub, "ManualChatHub", "SignalR Hub", "Recebe mensagens dos clientes via WebSocket e delega a publicação")
-    
     Component(publisher, "RedisPublisher", "Service", "Serializa mensagens e publica no canal Redis")
-    
-    Component(subscriber, "RedisSubscriber", "BackgroundService", "Assina o canal Redis e distribui mensagens recebidas para os clientes conectados")
-    
-    Component(hubContext, "IHubContext", "SignalR", "Permite enviar mensagens aos clientes WebSocket a partir de serviços externos ao Hub")
+    Component(hub, "ChatHub", "SignalR Hub", "Recebe mensagens dos clientes via WebSocket e delega a publicação")
+    Component(subscriber, "RedisSubscriber", "BackgroundService", "Assina o canal Redis e distribui mensagens recebidas para os clientes conectados")    
 }
 
 ContainerDb(redis, "Redis", "In-Memory Data Store", "Canal: chat:messages")
@@ -21,8 +20,8 @@ Rel(spa, hub, "Envia mensagem", "WebSocket")
 Rel(hub, publisher, "Usa")
 Rel(publisher, redis, "PUBLISH", "JSON")
 Rel(redis, subscriber, "SUBSCRIBE")
-Rel(subscriber, hubContext, "SendAsync")
-Rel(hubContext, spa, "Recebe mensagem", "WebSocket")
+Rel(subscriber, hub, "SendAsync")
+Rel(hub, spa, "Recebe mensagem", "WebSocket")
 
 SHOW_LEGEND()
 @enduml
