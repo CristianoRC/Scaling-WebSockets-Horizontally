@@ -1,10 +1,10 @@
 # 🚀 Escala Horizontal com WebSockets
 
-> 📺 **Em breve!** Uma aula completa sobre este assunto será publicada no meu canal do YouTube!
-> 
-> [![YouTube](https://img.shields.io/badge/YouTube-Cristiano%20Raffi%20Cunha-red?style=for-the-badge&logo=youtube)](https://www.youtube.com/c/CristianoRaffiCunha)
-> 
-> 🔔 **Inscreva-se para não perder!**
+> 📺 **Assista a aula completa no YouTube!**
+ 
+[![YouTube Video](https://img.shields.io/badge/▶_Assistir_Vídeo-Escala_Horizontal_com_WebSockets-red?style=for-the-badge&logo=youtube)](https://youtu.be/ye7nj-2j3VE?si=srvYhBSEQrZytUzs)
+ 
+[![YouTube Channel](https://img.shields.io/badge/YouTube-Cristiano%20Raffi%20Cunha-red?style=for-the-badge&logo=youtube)](https://www.youtube.com/c/CristianoRaffiCunha)
 
 ---
 
